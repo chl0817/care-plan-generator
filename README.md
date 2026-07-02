@@ -1,6 +1,6 @@
 # Care Plan Generator
 
-AI powered Care Plan Generator for Specialty Pharmacy.
+AI powered Care Plan Generator for Specialty Pharmacy
 
 ## Features
 
