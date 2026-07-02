@@ -90,7 +90,7 @@ Validation includes:
 | Same Patient + Same Medication + Same Day      | Error   | Block submission  |
 | Same Patient + Same Medication + Different Day | Warning | User may continue |
 
----
+--
 
 #### Patient Duplicate Rules
 
