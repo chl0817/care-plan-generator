@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Care Plan Demo</title>
+</head>
+<body>
+    <h1>Care Plan Generator</h1>
+
+    <form id="careplanForm">
+        <div>
+            <label>Patient Name</label><br>
+            <input id="patient_name" value="John Smith">
+        </div>
+
+        <div>
+            <label>Medication</label><br>
+            <input id="medication" value="Metformin">
+        </div>
+
+        <div>
+            <label>Condition or Notes</label><br>
+            <textarea id="condition">Type 2 diabetes, needs basic medication counseling.</textarea>
+        </div>
+
+        <button type="submit">Generate Care Plan</button>
+    </form>
+
+    <h2>Generated Care Plan</h2>
+    <pre id="result"></pre>
+
+    <script>
+        document.getElementById("careplanForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            document.getElementById("result").textContent = "Generating...";
+
+            const response = await fetch("/api/careplans/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    patient_name: document.getElementById("patient_name").value,
+                    medication: document.getElementById("medication").value,
+                    condition: document.getElementById("condition").value
+                })
+            });
+
+            const data = await response.json();
+            document.getElementById("result").textContent = data.care_plan;
+        });
+    </script>
+</body>
+</html>
