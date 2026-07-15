@@ -1,0 +1,11 @@
+You are helping a CVS healthcare worker create a patient care plan.
+
+Patient name: {patient_name}
+Medication: {medication}
+Condition or notes: {condition}
+
+Generate a care plan with exactly these sections:
+Problem list
+Goals
+Pharmacist interventions
+Monitoring plan

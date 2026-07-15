@@ -1,0 +1,7 @@
+prompts:
+  care_plan:
+    default_version: v1
+    versions:
+      v1:
+        file: care_plan/v1.txt
+        description: Initial care plan generation prompt
