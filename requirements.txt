@@ -1,3 +1,4 @@
 Django
 openai
 python-dotenv
+PyYAML

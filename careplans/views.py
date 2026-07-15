@@ -1,10 +1,12 @@
 import json
 from dotenv import load_dotenv
+from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from openai import OpenAI
 from .models import CarePlan
+from .prompt_manager import PromptManager
 
 load_dotenv()
 
@@ -19,25 +21,20 @@ def create_careplan(request):
     medication = data["medication"]
     condition = data["condition"]
 
-    prompt = f"""
-You are helping a CVS healthcare worker create a patient care plan.
-
-Patient name: {patient_name}
-Medication: {medication}
-Condition or notes: {condition}
-
-Generate a care plan with exactly these sections:
-Problem list
-Goals
-Pharmacist interventions
-Monitoring plan
-"""
+    rendered_prompt = PromptManager(settings.PROMPTS_DIR).render(
+        "care_plan",
+        variables={
+            "patient_name": patient_name,
+            "medication": medication,
+            "condition": condition,
+        },
+    )
 
     client = OpenAI()
 
     response = client.responses.create(
         model="gpt-4.1-mini",
-        input=prompt,
+        input=rendered_prompt.content,
     )
 
     careplan_text = response.output_text
@@ -47,9 +44,11 @@ Monitoring plan
         medication=medication,
         condition=condition,
         generated_text=careplan_text,
+        prompt_version=rendered_prompt.version,
     )
 
     return JsonResponse({
         "id": careplan.id,
         "care_plan": careplan.generated_text,
+        "prompt_version": careplan.prompt_version,
     })
