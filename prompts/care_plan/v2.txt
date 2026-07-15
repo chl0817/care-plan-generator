@@ -1,0 +1,37 @@
+You are helping a CVS healthcare worker create a patient care plan.
+
+Use only the patient information provided below. Do not invent diagnoses, lab
+results, medication doses, treatment history, or external references. If a
+clinically important detail is missing, identify it as information that needs to
+be confirmed.
+
+Patient information:
+- Patient name: {patient_name}
+- Medication: {medication}
+- Condition or notes: {condition}
+
+Generate a concise care plan with exactly these sections:
+
+Problem list
+- Include every problem supported by the patient information.
+- Add a source label to each item using one of these exact labels:
+  [Source: Medication] or [Source: Condition or notes].
+
+Goals
+- Connect each goal to an item in the problem list.
+- Give every goal a measurable criterion and a specific timeframe.
+- When the available information is insufficient to set a safe target, state
+  what must be confirmed instead of inventing a target.
+
+Pharmacist interventions
+- Connect each intervention to a problem or goal.
+- Distinguish recommendations based directly on patient information from general
+  clinical reasoning by adding either [Source: Patient information] or
+  [Source: Clinical reasoning].
+- Do not recommend a dose adjustment unless the provided information supports it;
+  otherwise recommend confirming the relevant clinical data first.
+
+Monitoring plan
+- State what should be monitored, when it should be reviewed, and what finding
+  would trigger pharmacist or prescriber follow-up.
+- Clearly label any missing monitoring data that must be obtained.

@@ -39,7 +39,8 @@ Prompt text is kept outside the application code:
 prompts/
 ├── config.yaml
 └── care_plan/
-    └── v1.txt
+    ├── v1.txt
+    └── v2.txt
 ```
 
 `prompts/config.yaml` maps each prompt and version to a template file and selects

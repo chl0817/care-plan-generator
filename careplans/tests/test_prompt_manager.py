@@ -2,6 +2,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
+from django.conf import settings
+
 from careplans.prompt_manager import (
     PromptManager,
     PromptNotFoundError,
@@ -60,3 +62,19 @@ prompts:
     def test_load_rejects_unknown_version(self):
         with self.assertRaises(PromptNotFoundError):
             self.manager.load("care_plan", version="v3")
+
+
+class ProjectPromptConfigurationTests(TestCase):
+    def test_care_plan_v2_is_the_project_default(self):
+        prompt = PromptManager(settings.PROMPTS_DIR).render(
+            "care_plan",
+            {
+                "patient_name": "Alex",
+                "medication": "Example medication",
+                "condition": "Example condition",
+            },
+        )
+
+        self.assertEqual(prompt.version, "v2")
+        self.assertIn("[Source: Medication]", prompt.content)
+        self.assertIn("measurable criterion and a specific timeframe", prompt.content)

@@ -1,7 +1,10 @@
 prompts:
   care_plan:
-    default_version: v1
+    default_version: v2
     versions:
       v1:
         file: care_plan/v1.txt
         description: Initial care plan generation prompt
+      v2:
+        file: care_plan/v2.txt
+        description: Add source labels, measurable goals, and missing-data safeguards
