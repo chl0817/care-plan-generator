@@ -45,10 +45,21 @@ section code/title.
 
 ## 2. Store embeddings in PostgreSQL/pgvector
 
-Use a PostgreSQL image/package that includes the `vector` extension, then set:
+For this application, prefer pgvector over Chroma. The care-plan system already
+targets PostgreSQL, while the drug-label index needs transactions, durable
+storage, metadata filters, current/old SPL version handling, and an audit trail.
+Chroma remains useful for a quick notebook or disposable local prototype.
+
+Start the included pgvector service:
 
 ```bash
-export DATABASE_URL='postgresql://user:password@localhost:5432/careplan'
+docker compose up -d db
+export DATABASE_URL='postgresql://careplan:careplan@localhost:5432/careplan'
+```
+
+Then embed and index the generated chunks:
+
+```bash
 export OPENAI_API_KEY='...'
 python3 scripts/index_chunks_pgvector.py data/dailymed/chunks.jsonl
 ```
@@ -57,26 +68,38 @@ The indexer creates an HNSW cosine index and idempotently upserts each chunk. It
 uses `text-embedding-3-small` with 1,536 dimensions. Keep the same embedding
 model and dimensions for both indexing and queries.
 
-A retrieval query follows the same pattern:
+A reusable search function is available from application code:
 
 ```python
-query_vector = client.embeddings.create(
-    model="text-embedding-3-small",
-    input=[question],
-    dimensions=1536,
-).data[0].embedding
+from careplans.rag.pgvector_store import search_chunks
 
-rows = connection.execute(
-    """
-    SELECT content, metadata, 1 - (embedding <=> %s::vector) AS score
-    FROM drug_label_chunks
-    WHERE is_current
-      AND metadata->>'label_type' ILIKE '%%HUMAN%%'
-    ORDER BY embedding <=> %s::vector
-    LIMIT 8
-    """,
-    (str(query_vector), str(query_vector)),
-).fetchall()
+results = search_chunks(
+    "What are the contraindications for ethacrynic acid?",
+    top_k=5,
+)
+
+for result in results:
+    print(result.score, result.metadata["section_title"])
+    print(result.text)
+```
+
+You can apply exact metadata filters when the medication or SPL identifier is
+already known:
+
+```python
+results = search_chunks(
+    "recommended dosage",
+    top_k=5,
+    metadata_filter={"set_id": "1efe378e-fee1-4ae9-8ea5-0fe2265fe2d8"},
+)
+```
+
+Or test retrieval from the command line:
+
+```bash
+python3 scripts/search_dailymed.py \
+  "What are the contraindications for ethacrynic acid?" \
+  --top-k 5
 ```
 
 In production, add lexical/BM25 search and fuse it with vector results. Drug

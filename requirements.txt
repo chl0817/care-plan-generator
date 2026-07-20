@@ -1,4 +1,5 @@
 Django
+certifi
 openai
 python-dotenv
 PyYAML

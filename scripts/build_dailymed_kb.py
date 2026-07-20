@@ -6,11 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import ssl
 import sys
 import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path
+
+import certifi
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -36,7 +39,10 @@ def parse_args() -> argparse.Namespace:
 
 def download(url: str, destination: Path) -> None:
     request = urllib.request.Request(url, headers={"User-Agent": "care-plan-generator/1.0"})
-    with urllib.request.urlopen(request, timeout=120) as response, destination.open("wb") as out:
+    tls_context = ssl.create_default_context(cafile=certifi.where())
+    with urllib.request.urlopen(
+        request, timeout=120, context=tls_context
+    ) as response, destination.open("wb") as out:
         shutil.copyfileobj(response, out, length=1024 * 1024)
 
 
