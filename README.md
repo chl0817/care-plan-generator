@@ -61,3 +61,10 @@ rendered = manager.render(
 rendered.content
 rendered.version
 ```
+
+## DailyMed RAG knowledge base
+
+The project includes a section-aware DailyMed SPL parser/chunker and a
+PostgreSQL/pgvector indexing script. See
+[`docs/rag_knowledge_base.md`](docs/rag_knowledge_base.md) for setup, chunking,
+indexing, retrieval, and incremental-update instructions.

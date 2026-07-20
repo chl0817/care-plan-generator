@@ -19,6 +19,9 @@ env/
 # Logs
 *.log
 
+# Generated DailyMed knowledge-base artifacts
+data/dailymed/
+
 # Test cache
 .pytest_cache/
 
