@@ -108,6 +108,31 @@ that pure semantic search can miss. Also filter to the current SPL version and
 show `source_url` beside generated clinical content so a pharmacist can verify
 the source label.
 
+## Care-plan generation flow
+
+The Django `POST /api/careplans/` endpoint now runs the complete RAG flow:
+
+1. Build a retrieval query from medication plus diagnosis/condition.
+2. Retrieve the configured top-k current chunks and discard results below the
+   similarity threshold.
+3. Render prompt `v3` with patient information, patient record, and delimited
+   DailyMed references.
+4. Generate the care plan and save the exact retrieved chunks with the record.
+
+Optional environment settings:
+
+```dotenv
+DATABASE_URL=postgresql://careplan:careplan@localhost:5432/careplan
+RAG_TOP_K=5
+RAG_MIN_SCORE=0.55
+CARE_PLAN_MODEL=gpt-4.1-mini
+```
+
+If retrieval or model generation fails, the endpoint returns HTTP 503 and does
+not create a care plan. If retrieval succeeds but no chunk clears the threshold,
+the model may use patient data but is explicitly prohibited from supplying
+missing drug facts from memory.
+
 ## 3. Update strategy
 
 1. Bootstrap from the full human prescription release.

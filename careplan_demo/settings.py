@@ -1,7 +1,10 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = True
@@ -42,3 +45,9 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 PROMPTS_DIR = BASE_DIR / "prompts"
+RAG_DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://careplan:careplan@localhost:5432/careplan"
+)
+RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
+RAG_MIN_SCORE = float(os.getenv("RAG_MIN_SCORE", "0.55"))
+CARE_PLAN_MODEL = os.getenv("CARE_PLAN_MODEL", "gpt-4.1-mini")

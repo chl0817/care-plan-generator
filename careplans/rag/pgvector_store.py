@@ -187,6 +187,7 @@ class PgVectorStore:
         query: str,
         *,
         top_k: int = 5,
+        min_score: float | None = None,
         metadata_filter: dict[str, Any] | None = None,
         current_only: bool = True,
     ) -> list[SearchResult]:
@@ -200,6 +201,8 @@ class PgVectorStore:
             raise ValueError("query cannot be empty")
         if not 1 <= top_k <= 100:
             raise ValueError("top_k must be between 1 and 100")
+        if min_score is not None and not 0 <= min_score <= 1:
+            raise ValueError("min_score must be between 0 and 1")
 
         query_vector = _vector_literal(self.embed([query])[0])
         conditions = []
@@ -223,10 +226,13 @@ class PgVectorStore:
         with self._connect(self.database_url) as connection:
             rows = connection.execute(sql, parameters).fetchall()
 
-        return [
+        results = [
             SearchResult(id=row[0], text=row[1], metadata=row[2], score=float(row[3]))
             for row in rows
         ]
+        if min_score is not None:
+            results = [result for result in results if result.score >= min_score]
+        return results
 
 
 def search_chunks(
@@ -234,6 +240,7 @@ def search_chunks(
     *,
     top_k: int = 5,
     database_url: str | None = None,
+    min_score: float | None = None,
     metadata_filter: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
     """Convenience function for application code."""
@@ -244,5 +251,6 @@ def search_chunks(
     return PgVectorStore(url).search(
         query,
         top_k=top_k,
+        min_score=min_score,
         metadata_filter=metadata_filter,
     )

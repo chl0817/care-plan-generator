@@ -1,6 +1,6 @@
 prompts:
   care_plan:
-    default_version: v2
+    default_version: v3
     versions:
       v1:
         file: care_plan/v1.txt
@@ -8,3 +8,6 @@ prompts:
       v2:
         file: care_plan/v2.txt
         description: Add source labels, measurable goals, and missing-data safeguards
+      v3:
+        file: care_plan/v3.txt
+        description: Ground care plans in patient records and retrieved DailyMed references

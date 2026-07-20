@@ -111,6 +111,26 @@ class PgVectorStoreTests(TestCase):
             store.search("   ")
         with self.assertRaisesRegex(ValueError, "top_k"):
             store.search("query", top_k=101)
+        with self.assertRaisesRegex(ValueError, "min_score"):
+            store.search("query", min_score=1.1)
+
+    def test_search_applies_minimum_score(self):
+        embeddings = FakeEmbeddings()
+        connection = FakeConnection(
+            [
+                ("relevant", "Relevant", {}, 0.8),
+                ("weak", "Weak", {}, 0.4),
+            ]
+        )
+        store = PgVectorStore(
+            "postgresql://example",
+            client=SimpleNamespace(embeddings=embeddings),
+            connection_factory=lambda _: connection,
+        )
+
+        results = store.search("query", top_k=2, min_score=0.55)
+
+        self.assertEqual([result.id for result in results], ["relevant"])
 
     def test_index_jsonl_batches_embeddings_and_database_writes(self):
         embeddings = FakeEmbeddings()

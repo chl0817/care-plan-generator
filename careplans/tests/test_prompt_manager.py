@@ -65,16 +65,19 @@ prompts:
 
 
 class ProjectPromptConfigurationTests(TestCase):
-    def test_care_plan_v2_is_the_project_default(self):
+    def test_care_plan_v3_is_the_project_default(self):
         prompt = PromptManager(settings.PROMPTS_DIR).render(
             "care_plan",
             {
                 "patient_name": "Alex",
                 "medication": "Example medication",
                 "condition": "Example condition",
+                "patient_record": "Example patient record",
+                "retrieved_context": "Example DailyMed reference",
             },
         )
 
-        self.assertEqual(prompt.version, "v2")
-        self.assertIn("[Source: Medication]", prompt.content)
-        self.assertIn("measurable criterion and a specific timeframe", prompt.content)
+        self.assertEqual(prompt.version, "v3")
+        self.assertIn("Example patient record", prompt.content)
+        self.assertIn("Example DailyMed reference", prompt.content)
+        self.assertIn("Do not fill the gap from memory", prompt.content)

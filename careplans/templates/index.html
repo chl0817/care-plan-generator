@@ -18,8 +18,13 @@
         </div>
 
         <div>
-            <label>Condition or Notes</label><br>
-            <textarea id="condition">Type 2 diabetes, needs basic medication counseling.</textarea>
+            <label>Diagnosis or Condition</label><br>
+            <textarea id="condition">Type 2 diabetes</textarea>
+        </div>
+
+        <div>
+            <label>Patient Record</label><br>
+            <textarea id="patient_record" rows="8" placeholder="Clinical notes, labs, medication history, allergies, and other patient-specific information"></textarea>
         </div>
 
         <button type="submit">Generate Care Plan</button>
@@ -42,12 +47,22 @@
                 body: JSON.stringify({
                     patient_name: document.getElementById("patient_name").value,
                     medication: document.getElementById("medication").value,
-                    condition: document.getElementById("condition").value
+                    condition: document.getElementById("condition").value,
+                    patient_record: document.getElementById("patient_record").value
                 })
             });
 
             const data = await response.json();
-            document.getElementById("result").textContent = data.care_plan;
+            if (!response.ok) {
+                document.getElementById("result").textContent = data.error || "Request failed";
+                return;
+            }
+            const references = data.references.length
+                ? "\n\nRetrieved references:\n" + data.references.map(
+                    reference => `- ${reference.section_title} (${reference.score.toFixed(3)}) ${reference.source_url}`
+                  ).join("\n")
+                : "\n\nNo sufficiently relevant DailyMed reference was retrieved.";
+            document.getElementById("result").textContent = data.care_plan + references;
         });
     </script>
 </body>
