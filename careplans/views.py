@@ -84,13 +84,22 @@ def create_careplan(request):
         retrieval_query=generated.retrieval_query,
         retrieved_chunks=generated.retrieved_chunks,
         generated_text=generated.text,
+        structured_data=generated.structured_data,
+        parse_failed=generated.parse_failed,
+        raw_output=generated.raw_output,
         prompt_version=generated.prompt_version,
     )
 
     return JsonResponse(
         {
             "id": careplan.id,
-            "care_plan": careplan.generated_text,
+            "care_plan": (
+                careplan.structured_data
+                if careplan.structured_data is not None
+                else careplan.generated_text
+            ),
+            "parse_failed": careplan.parse_failed,
+            "raw_output": careplan.raw_output if careplan.parse_failed else None,
             "prompt_version": careplan.prompt_version,
             "references": [
                 {

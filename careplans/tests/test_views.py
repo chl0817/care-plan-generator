@@ -15,7 +15,7 @@ class CreateCarePlanViewTests(TestCase):
         self, openai, vector_store, generator_class
     ):
         generator_class.return_value.generate.return_value = GeneratedCarePlan(
-            text="Grounded care plan",
+            text='{"problem_list": ["Grounded problem"]}',
             prompt_version="v3",
             retrieval_query="Medication: Example Drug\nDiagnosis or condition: Condition A",
             retrieved_chunks=[
@@ -29,6 +29,13 @@ class CreateCarePlanViewTests(TestCase):
                     },
                 }
             ],
+            structured_data={
+                "problem_list": ["Grounded problem"],
+                "goals": ["Grounded goal"],
+                "pharmacist_interventions": ["Grounded intervention"],
+                "monitoring_plan": ["Grounded monitoring"],
+            },
+            raw_output='{"problem_list": ["Grounded problem"]}',
         )
 
         response = self.client.post(
@@ -46,10 +53,18 @@ class CreateCarePlanViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["references"][0]["id"], "chunk-1")
+        self.assertEqual(
+            response.json()["care_plan"]["problem_list"], ["Grounded problem"]
+        )
+        self.assertFalse(response.json()["parse_failed"])
         careplan = CarePlan.objects.get()
         self.assertEqual(careplan.patient_record, "Patient record text")
         self.assertEqual(careplan.prompt_version, "v3")
         self.assertEqual(careplan.retrieved_chunks[0]["id"], "chunk-1")
+        self.assertEqual(
+            careplan.structured_data["monitoring_plan"], ["Grounded monitoring"]
+        )
+        self.assertFalse(careplan.parse_failed)
 
     def test_create_careplan_rejects_missing_required_input(self):
         response = self.client.post(

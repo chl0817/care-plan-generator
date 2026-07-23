@@ -2,11 +2,25 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
+
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .prompt_manager import PromptManager
 from .rag.pgvector_store import PgVectorStore, SearchResult
+
+
+class CarePlanOutput(BaseModel):
+    """The JSON shape returned by the care-plan model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    problem_list: list[str] = Field(min_length=1)
+    goals: list[str] = Field(min_length=1)
+    pharmacist_interventions: list[str] = Field(min_length=1)
+    monitoring_plan: list[str] = Field(min_length=1)
 
 
 @dataclass(frozen=True)
@@ -15,6 +29,10 @@ class GeneratedCarePlan:
     prompt_version: str
     retrieval_query: str
     retrieved_chunks: list[dict[str, Any]]
+    structured_data: dict[str, Any] | None = None
+    parse_failed: bool = False
+    raw_output: str = ""
+    validation_errors: tuple[str, ...] = ()
 
 
 def build_retrieval_query(medication: str, diagnosis: str) -> str:
@@ -60,6 +78,8 @@ def format_retrieved_context(results: list[SearchResult]) -> str:
 
 
 class CarePlanGenerator:
+    MAX_PARSE_RETRIES: ClassVar[int] = 2
+
     def __init__(
         self,
         *,
@@ -102,16 +122,79 @@ class CarePlanGenerator:
                 "retrieved_context": retrieved_context,
             },
         )
-        response = self.client.responses.create(
-            model=self.model,
-            input=rendered_prompt.content,
-        )
-        if not response.output_text.strip():
-            raise RuntimeError("care-plan model returned an empty response")
 
-        return GeneratedCarePlan(
-            text=response.output_text,
-            prompt_version=rendered_prompt.version,
-            retrieval_query=retrieval_query,
-            retrieved_chunks=[_serialize_result(result) for result in results],
-        )
+        response_format = {
+            "format": {
+                "type": "json_schema",
+                "name": "care_plan",
+                "schema": CarePlanOutput.model_json_schema(),
+                "strict": True,
+            }
+        }
+        model_input: str | list[dict[str, str]] = rendered_prompt.content
+        raw_output = ""
+        validation_errors: list[str] = []
+
+        for attempt in range(self.MAX_PARSE_RETRIES + 1):
+            response = self.client.responses.create(
+                model=self.model,
+                input=model_input,
+                text=response_format,
+            )
+            raw_output = response.output_text
+
+            try:
+                care_plan = CarePlanOutput.model_validate_json(raw_output)
+            except (ValidationError, ValueError) as exc:
+                error = _format_validation_error(exc, raw_output)
+                validation_errors.append(error)
+                if attempt == self.MAX_PARSE_RETRIES:
+                    return GeneratedCarePlan(
+                        text=raw_output,
+                        prompt_version=rendered_prompt.version,
+                        retrieval_query=retrieval_query,
+                        retrieved_chunks=[
+                            _serialize_result(result) for result in results
+                        ],
+                        parse_failed=True,
+                        raw_output=raw_output,
+                        validation_errors=tuple(validation_errors),
+                    )
+
+                model_input = [
+                    {"role": "user", "content": rendered_prompt.content},
+                    {"role": "assistant", "content": raw_output},
+                    {
+                        "role": "user",
+                        "content": (
+                            "Your previous JSON did not validate against the required "
+                            "care-plan schema. Correct it and return only the complete "
+                            "JSON object.\n\nValidation error:\n"
+                            f"{error}"
+                        ),
+                    },
+                ]
+                continue
+
+            structured_data = care_plan.model_dump(mode="json")
+            return GeneratedCarePlan(
+                text=json.dumps(structured_data, ensure_ascii=False),
+                prompt_version=rendered_prompt.version,
+                retrieval_query=retrieval_query,
+                retrieved_chunks=[
+                    _serialize_result(result) for result in results
+                ],
+                structured_data=structured_data,
+                raw_output=raw_output,
+                validation_errors=tuple(validation_errors),
+            )
+
+        raise AssertionError("unreachable")
+
+
+def _format_validation_error(exc: Exception, raw_output: str) -> str:
+    if not raw_output.strip():
+        return "The model returned an empty response instead of a JSON object."
+    if isinstance(exc, ValidationError):
+        return json.dumps(exc.errors(include_url=False), ensure_ascii=False)
+    return str(exc)

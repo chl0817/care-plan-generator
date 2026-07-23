@@ -62,7 +62,10 @@
                     reference => `- ${reference.section_title} (${reference.score.toFixed(3)}) ${reference.source_url}`
                   ).join("\n")
                 : "\n\nNo sufficiently relevant DailyMed reference was retrieved.";
-            document.getElementById("result").textContent = data.care_plan + references;
+            const carePlan = typeof data.care_plan === "string"
+                ? data.care_plan
+                : JSON.stringify(data.care_plan, null, 2);
+            document.getElementById("result").textContent = carePlan + references;
         });
     </script>
 </body>

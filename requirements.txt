@@ -1,6 +1,7 @@
 Django
 certifi
 openai
+pydantic>=2
 python-dotenv
 PyYAML
 psycopg[binary]
